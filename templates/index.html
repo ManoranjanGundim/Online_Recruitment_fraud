@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fake Job Posting Detector</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #f4f7f9; color: #333; margin: 0; padding: 2rem; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #2c3e50; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .form-group { display: flex; flex-direction: column; }
+        .full-width { grid-column: 1 / -1; }
+        label { margin-bottom: 0.5rem; font-weight: 600; }
+        input, textarea { padding: 0.8rem; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; }
+        textarea { resize: vertical; min-height: 100px; }
+        button { background-color: #3498db; color: white; padding: 1rem; border: none; border-radius: 4px; font-size: 1.1rem; cursor: pointer; transition: background-color 0.3s; grid-column: 1 / -1; margin-top: 1rem; }
+        button:hover { background-color: #2980b9; }
+        #result { margin-top: 2rem; padding: 1.5rem; border-radius: 4px; text-align: center; font-size: 1.2rem; font-weight: bold; }
+        .legitimate { background-color: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
+        .fraudulent { background-color: #ffebee; color: #c62828; border: 1px solid #ef9a9a; }
+        .loading { background-color: #e3f2fd; color: #1565c0; border: 1px solid #90caf9; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Fake Job Posting Detector</h1>
+        <form id="job-form">
+            <div class="form-grid">
+                <div class="form-group full-width">
+                    <label for="title">Job Title</label>
+                    <input type="text" id="title" name="title" required>
+                </div>
+                <div class="form-group">
+                    <label for="location">Location</label>
+                    <input type="text" id="location" name="location">
+                </div>
+                <div class="form-group">
+                    <label for="department">Department</label>
+                    <input type="text" id="department" name="department">
+                </div>
+                <div class="form-group full-width">
+                    <label for="company_profile">Company Profile</label>
+                    <textarea id="company_profile" name="company_profile"></textarea>
+                </div>
+                <div class="form-group full-width">
+                    <label for="description">Job Description</label>
+                    <textarea id="description" name="description" required></textarea>
+                </div>
+                <div class="form-group full-width">
+                    <label for="requirements">Requirements</label>
+                    <textarea id="requirements" name="requirements"></textarea>
+                </div>
+                <div class="form-group full-width">
+                    <label for="benefits">Benefits</label>
+                    <textarea id="benefits" name="benefits"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="employment_type">Employment Type</label>
+                    <input type="text" id="employment_type" name="employment_type">
+                </div>
+                <div class="form-group">
+                    <label for="required_experience">Required Experience</label>
+                    <input type="text" id="required_experience" name="required_experience">
+                </div>
+                <div class="form-group">
+                    <label for="required_education">Required Education</label>
+                    <input type="text" id="required_education" name="required_education">
+                </div>
+                <div class="form-group">
+                    <label for="industry">Industry</label>
+                    <input type="text" id="industry" name="industry">
+                </div>
+                 <div class="form-group full-width">
+                    <label for="function">Function</label>
+                    <input type="text" id="function" name="function">
+                </div>
+                <button type="submit">Analyze Job Posting</button>
+            </div>
+        </form>
+        <div id="result" style="display: none;"></div>
+    </div>
+
+    <script>
+        document.getElementById('job-form').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'loading';
+            resultDiv.textContent = 'Analyzing...';
+
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data),
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    if (result.prediction === 'Fraudulent') {
+                        resultDiv.className = 'fraudulent';
+                        resultDiv.textContent = `Result: Fraudulent (Confidence: ${result.confidence})`;
+                    } else {
+                        resultDiv.className = 'legitimate';
+                        resultDiv.textContent = `Result: Legitimate (Confidence: ${100 - parseFloat(result.confidence)}%)`;
+                    }
+                } else {
+                    resultDiv.className = 'fraudulent';
+                    resultDiv.textContent = `Error: ${result.error || 'Prediction failed'}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'fraudulent';
+                resultDiv.textContent = 'An error occurred. Please try again.';
+            }
+        });
+    </script>
+</body>
+</html>
